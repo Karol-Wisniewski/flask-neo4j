@@ -305,10 +305,10 @@ def get_department_by_name_route(name):
 
 #GET DEPARTMENT EMPLOYEES
 def get_department_employees(tx, departmentName):
-    query = f"MATCH (e:Employee)-[r]-(d:Department {{name: '{departmentName}'}}) RETURN e, d"
+    query = f"MATCH (e:Employee)-[r:WORKS_IN]-(d:Department {{name: '{departmentName}'}}) RETURN e, d"
     results = tx.run(query).data()
     if not results:
-        return {'message': 'No department found', 'status': 404}
+        return {'message': 'No department found or there are no workers in it', 'status': 404}
     else:
         departmentInfo = {'workers': [result['e'] for result in results]}
         return departmentInfo
