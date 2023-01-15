@@ -20,26 +20,27 @@ def get_workers(tx, sortValue='', sortCategory='', filterValue='', filterCategor
     query = "MATCH (e:Employee)-[r]-(d:Department) RETURN e, d"
     if (sortCategory == 'asc'):
         if (sortValue == 'firstName'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.firstName"
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.firstName"
         elif (sortValue == 'lastName'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.lastName"
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.lastName"
         elif (sortValue == 'role'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.role"
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.role"
     if (sortCategory == 'desc'):
         if (sortValue == 'firstName'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.firstName DESC"
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.firstName DESC"
         elif (sortValue == 'lastName'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.lastName DESC"
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.lastName DESC"
         elif (sortValue == 'role'):
-            query = "MATCH (e:Employee) RETURN e ORDER BY e.role DESC"    
+            query = "MATCH (e:Employee) RETURN e, d ORDER BY e.role DESC"    
     if (filterCategory == 'firstName'):
-        query = f"MATCH (e:Employee) WHERE e.firstName CONTAINS '{filterValue}' RETURN e"          
+        query = f"MATCH (e:Employee) WHERE e.firstName CONTAINS '{filterValue}' RETURN e, d"          
     if (filterCategory == 'lastName'):
-        query = f"MATCH (e:Employee) WHERE e.surname CONTAINS '{filterValue}' RETURN e"   
+        query = f"MATCH (e:Employee) WHERE e.surname CONTAINS '{filterValue}' RETURN e, d"   
     if (filterCategory == 'role'):
-        query = f"MATCH (e:Employee) WHERE e.role CONTAINS '{filterValue}' RETURN e"                 
+        query = f"MATCH (e:Employee) WHERE e.role CONTAINS '{filterValue}' RETURN e, d"                 
     results = tx.run(query).data()
     workers = [{'id': result['e']['id'], 'firstName': result['e']['firstName'], 'lastName': result['e']['lastName'], 'role': result['e']['role'], 'department': result['d']['name']} for result in results]
+    print(results)
     return workers
 
 @app.route('/employees', methods=['GET'])
@@ -69,6 +70,34 @@ def get_worker_by_id_route(id):
     workerId = id
     with driver.session() as session:
         res = session.read_transaction(get_worker_by_id, workerId)
+    return jsonify(res)
+
+
+#GET WORKER SUBORDINATES
+def get_worker_subordinates(tx, id):
+    getWorker = f"MATCH (e:Employee) WHERE e.id = '{id}' RETURN e"
+    checkIfManager = f"MATCH (e:Employee)-[r:MANAGES]-(d:Department) WHERE e.id = '{id}' RETURN e, d"
+    workerExists = tx.run(getWorker).data()
+    isManager = tx.run(checkIfManager).data()
+    if not workerExists:
+        return {'message': 'Employee not found', 'status': 404}
+    else:
+        if not isManager:
+            return {'message': 'Employee is not a manager', 'status': 400}
+        else:
+            manager = requests.get(f'http://127.0.0.1:5000/employees/{id}').json()
+            managerDepartment = manager["department"]
+            getSubordinates=f"MATCH (e:Employee)-[r:WORKS_IN]-(d:Department) WHERE d.name = '{managerDepartment}' RETURN e, d"
+            subordinates = tx.run(getSubordinates, managerDepartment=managerDepartment).data()
+            print(subordinates)
+            result = [{'id': subordinate['e']['id'], 'firstName': subordinate['e']['firstName'], 'lastName': subordinate['e']['lastName'], 'role': subordinate['e']['role'], 'department': subordinate['d']['name']} for subordinate in subordinates]
+            return {'subordinates': result}
+
+@app.route('/employees/<id>/subordinates', methods=['GET'])
+def get_worker_subordinates_route(id):
+    workerId = id
+    with driver.session() as session:
+        res = session.read_transaction(get_worker_subordinates, workerId)
     return jsonify(res)
 
 
@@ -249,3 +278,47 @@ def get_departments_route():
         departments = session.read_transaction(get_departments, sortValue, sortCategory, filterValue, filterCategory)
     response = {'departments': departments}
     return jsonify(response)
+
+
+#GET DEPARTMENT
+def get_department_by_name(tx, departmentName):
+    query = f"MATCH (e:Employee)-[r]-(d:Department {{name: '{departmentName}'}}) RETURN e, d"
+    findManager=f"MATCH (e:Employee)-[r:MANAGES]-(d:Department {{name: '{departmentName}'}}) RETURN e"
+    results = tx.run(query).data()
+    manager = tx.run(findManager).data()
+    if not results:
+        return {'message': 'No department found', 'status': 404}
+    else:
+        departmentInfo = {'name': results[0]['d']['name'], 'numberOfWorkers': len(results), 'workers': [result['e'] for result in results], 'manager': f"{manager[0]['e']['firstName']} {manager[0]['e']['lastName']}"}
+        return departmentInfo
+
+
+@app.route('/departments/<string:name>', methods=['GET'])
+def get_department_by_name_route(name):
+
+    departmentName = name
+
+    with driver.session() as session:
+        res = session.read_transaction(get_department_by_name, departmentName)
+    return jsonify(res)
+
+
+#GET DEPARTMENT EMPLOYEES
+def get_department_employees(tx, departmentName):
+    query = f"MATCH (e:Employee)-[r]-(d:Department {{name: '{departmentName}'}}) RETURN e, d"
+    results = tx.run(query).data()
+    if not results:
+        return {'message': 'No department found', 'status': 404}
+    else:
+        departmentInfo = {'workers': [result['e'] for result in results]}
+        return departmentInfo
+
+
+@app.route('/departments/<string:name>/employees', methods=['GET'])
+def get_department_employees_route(name):
+
+    departmentName = name
+
+    with driver.session() as session:
+        res = session.read_transaction(get_department_employees, departmentName)
+    return jsonify(res)
