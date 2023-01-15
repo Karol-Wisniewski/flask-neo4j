@@ -10,7 +10,10 @@ API description:
 
 /employees - all worker </br>
 /employees/:id - specific worker with given id </br>
+/employees/:id/subordinates - all subordinate workers for a manager of given id </br>
 /departments - all departments </br>
+/departments/:name/ - specific department with given name </br>
+/departments/:name/employees - all workers of a given department </br>
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
