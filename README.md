@@ -1,4 +1,4 @@
-# API using flask in Python, connecting to Docker Neo4J instance
+# API using flask in Python, connecting to Docker Neo4J container
 
 API description:
 
