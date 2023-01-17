@@ -2,7 +2,6 @@ from flask import Flask, jsonify, request
 from neo4j import GraphDatabase
 import requests
 import uuid
-import os
 
 app = Flask(__name__)
 
