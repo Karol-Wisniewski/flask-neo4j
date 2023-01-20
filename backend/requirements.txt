@@ -1,5 +1,4 @@
 flask
 neo4j
-dotenv
 requests
 uuid
