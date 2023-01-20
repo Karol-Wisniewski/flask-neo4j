@@ -5,14 +5,17 @@ import uuid
 
 app = Flask(__name__)
 
-uri = "neo4j://localhost:7687"
+uri = "neo4j+s://45730ae3.databases.neo4j.io"
 
 user = "neo4j"
 
-password = "test1234"
+password = "PmkhSEZ_5Lp59gPtMbHSYRA3LBjGObf4-RjSHxAOALk"
 
 driver = GraphDatabase.driver(uri, auth=(user, password), database="neo4j")
 
+@app.route('/', methods=['GET'])
+def default_get():
+    return "Flask API is live"
 
 #GET WORKERS WITH FILTERS
 def get_workers(tx, sortValue='', sortCategory='', filterValue='', filterCategory=''):
@@ -39,7 +42,6 @@ def get_workers(tx, sortValue='', sortCategory='', filterValue='', filterCategor
         query = f"MATCH (e:Employee) WHERE e.role CONTAINS '{filterValue}' RETURN e, d"                 
     results = tx.run(query).data()
     workers = [{'id': result['e']['id'], 'firstName': result['e']['firstName'], 'lastName': result['e']['lastName'], 'role': result['e']['role'], 'department': result['d']['name']} for result in results]
-    print(results)
     return workers
 
 @app.route('/employees', methods=['GET'])
@@ -88,7 +90,6 @@ def get_worker_subordinates(tx, id):
             managerDepartment = manager["department"]
             getSubordinates=f"MATCH (e:Employee)-[r:WORKS_IN]-(d:Department) WHERE d.name = '{managerDepartment}' RETURN e, d"
             subordinates = tx.run(getSubordinates, managerDepartment=managerDepartment).data()
-            print(subordinates)
             result = [{'id': subordinate['e']['id'], 'firstName': subordinate['e']['firstName'], 'lastName': subordinate['e']['lastName'], 'role': subordinate['e']['role'], 'department': subordinate['d']['name']} for subordinate in subordinates]
             return {'subordinates': result}
 
