@@ -1,4 +1,4 @@
-# API using flask in Python
+# API using flask in Python conecting with AuraDB online instance of neo4j
 
 API description:
 
