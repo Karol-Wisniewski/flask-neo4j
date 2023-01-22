@@ -3,6 +3,7 @@
 
 #Hosted at: https://flask-neo4j.onrender.com
 #Host website might render for 1-2 minutes!
+If for some reason website doesn't seem to work, contact me. Host was probably closed due to inactivity (lack of requests).
 
 API description:
 
