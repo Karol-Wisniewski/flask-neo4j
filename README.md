@@ -1,4 +1,4 @@
-# API using flask in Python conecting with AuraDB online instance of neo4j
+# Flask API connected to AuraDB instance of Neo4j
 
 
 #Hosted at: https://flask-neo4j.onrender.com
